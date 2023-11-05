@@ -24,7 +24,6 @@ export default function Login() {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-
         const url = isRegistering ? 'http://localhost:4000/register' : 'http://localhost:4000/login';
 
         fetch(url, {
@@ -44,12 +43,9 @@ export default function Login() {
                         setError(data.message);
                     });
                 } else {
+                    navigate('/home');
                     return response.json();
                 }
-            })
-
-            .then((result) => {
-
             })
             .catch((error) => {
                 console.error('Error:', error);
@@ -60,7 +56,7 @@ export default function Login() {
         <div>
             {/* template string or <div className={'container' + (isRegistering ? ' active' : '')} id="container">*/}
             <div className={`container ${isRegistering ? 'active' : ''}`} id="container">
-                
+
                 <div className="form-container sign-up">
                     <form id="signup-form" onSubmit={handleSubmit}>
                         <h1>{isRegistering ? 'Create Account' : 'Sign In'}</h1>
@@ -98,8 +94,9 @@ export default function Login() {
                         <button type="submit">{isRegistering ? 'Sign Up' : 'Sign In'}</button>
                     </form>
                 </div>
+
                 <div className="form-container sign-in">
-                    
+
                     <form id="login-form" onSubmit={handleSubmit}>
                         <h1>Sign In</h1>
                         <div className="social-icons">
@@ -109,8 +106,8 @@ export default function Login() {
                             <a href="#" className="icon"><i className="fa-brands fa-linkedin-in"></i></a>
                         </div>
                         <span>or use your email and password</span>
-                        <input type="email" name="email" placeholder="Email" />
-                        <input type="password" name="password" placeholder="Password" />
+                        <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} />
+                        <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} />
                         <a href="#">Forget Your Password?</a>
                         <button type="submit">Sign In</button>
                     </form>
