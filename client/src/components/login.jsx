@@ -69,28 +69,10 @@ export default function Login() {
                         </div>
                         <span>or use your email for {isRegistering ? 'registration' : 'sign in'}</span>
                         {isRegistering && (
-                            <input
-                                type="text"
-                                name="name"
-                                placeholder="Name"
-                                value={formData.name}
-                                onChange={handleChange}
-                            />
+                            <input type="text" name="name" placeholder="Name" value={formData.name} onChange={handleChange} />
                         )}
-                        <input
-                            type="email"
-                            name="email"
-                            placeholder="Email"
-                            value={formData.email}
-                            onChange={handleChange}
-                        />
-                        <input
-                            type="password"
-                            name="password"
-                            placeholder="Password"
-                            value={formData.password}
-                            onChange={handleChange}
-                        />
+                        <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} />
+                        <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} />
                         <button type="submit">{isRegistering ? 'Sign Up' : 'Sign In'}</button>
                     </form>
                 </div>
@@ -113,6 +95,7 @@ export default function Login() {
                     </form>
                     {error && <p>{error}</p>}
                 </div>
+
                 <div className="toggle-container">
                     <div className="toggle">
                         <div className={`toggle-panel toggle-left ${isRegistering ? 'hidden1' : ''}`}>
