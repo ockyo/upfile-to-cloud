@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Home from './home';
 
 export default function Login() {
-    const [isRegistering, setRegistering] = useState(true);
+    const [error, setError] = useState(null);
+    const navigate = useNavigate();
+    const [isRegistering, setRegistering] = useState(true);//destructuring
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -20,19 +24,32 @@ export default function Login() {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Sử dụng formData để gửi dữ liệu đến máy chủ
-        fetch('http://localhost:4000/register', {
+
+        const url = isRegistering ? 'http://localhost:4000/register' : 'http://localhost:4000/login';
+
+        fetch(url, {
             method: 'POST',
             body: JSON.stringify(formData),
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             }
         })
             .then((response) => {
-                return response.json();
+                if (isRegistering) {
+                    // Đăng ký thành công
+                    navigate('/home');
+                } else if (response.status === 401) {
+                    // Đăng nhập không thành công, hiển thị thông báo lỗi
+                    response.json().then(data => {
+                        setError(data.message);
+                    });
+                } else {
+                    return response.json();
+                }
             })
+
             .then((result) => {
-                // Xử lý kết quả từ máy chủ (nếu có)
+
             })
             .catch((error) => {
                 console.error('Error:', error);
@@ -41,24 +58,29 @@ export default function Login() {
 
     return (
         <div>
+            {/* template string or <div className={'container' + (isRegistering ? ' active' : '')} id="container">*/}
             <div className={`container ${isRegistering ? 'active' : ''}`} id="container">
+                
                 <div className="form-container sign-up">
                     <form id="signup-form" onSubmit={handleSubmit}>
-                        <h1>Create Account</h1>
+                        <h1>{isRegistering ? 'Create Account' : 'Sign In'}</h1>
                         <div className="social-icons">
+
                             <a href="#" className="icon"><i className="fa-brands fa-google-plus-g"></i></a>
                             <a href="#" className="icon"><i className="fa-brands fa-facebook-f"></i></a>
                             <a href="#" className="icon"><i className="fa-brands fa-github"></i></a>
                             <a href="#" className="icon"><i className="fa-brands fa-linkedin-in"></i></a>
                         </div>
-                        <span>or use your email for registration</span>
-                        <input
-                            type="text"
-                            name="name"
-                            placeholder="Name"
-                            value={formData.name}
-                            onChange={handleChange}
-                        />
+                        <span>or use your email for {isRegistering ? 'registration' : 'sign in'}</span>
+                        {isRegistering && (
+                            <input
+                                type="text"
+                                name="name"
+                                placeholder="Name"
+                                value={formData.name}
+                                onChange={handleChange}
+                            />
+                        )}
                         <input
                             type="email"
                             name="email"
@@ -73,11 +95,12 @@ export default function Login() {
                             value={formData.password}
                             onChange={handleChange}
                         />
-                        <button type="submit">Sign Up</button>
+                        <button type="submit">{isRegistering ? 'Sign Up' : 'Sign In'}</button>
                     </form>
                 </div>
                 <div className="form-container sign-in">
-                    <form>
+                    
+                    <form id="login-form" onSubmit={handleSubmit}>
                         <h1>Sign In</h1>
                         <div className="social-icons">
                             <a href="#" className="icon"><i className="fa-brands fa-google-plus-g"></i></a>
@@ -86,11 +109,12 @@ export default function Login() {
                             <a href="#" className="icon"><i className="fa-brands fa-linkedin-in"></i></a>
                         </div>
                         <span>or use your email and password</span>
-                        <input type="email" placeholder="Email" />
-                        <input type="password" placeholder="Password" />
+                        <input type="email" name="email" placeholder="Email" />
+                        <input type="password" name="password" placeholder="Password" />
                         <a href="#">Forget Your Password?</a>
-                        <button>Sign In</button>
+                        <button type="submit">Sign In</button>
                     </form>
+                    {error && <p>{error}</p>}
                 </div>
                 <div className="toggle-container">
                     <div className="toggle">
