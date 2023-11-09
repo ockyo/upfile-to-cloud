@@ -5,7 +5,7 @@ import Home from './home';
 export default function Login() {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
-    const [isRegistering, setRegistering] = useState(true);//destructuring
+    const [isRegistering, setRegistering] = useState(true);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -24,7 +24,8 @@ export default function Login() {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        const url = isRegistering ? 'http://localhost:4000/register' : 'http://localhost:4000/login';
+        // Thay đổi URL để sử dụng HTTPS
+        const url = isRegistering ? 'https://localhost:4000/register' : 'https://localhost:4000/login';
 
         fetch(url, {
             method: 'POST',
@@ -36,15 +37,19 @@ export default function Login() {
             .then((response) => {
                 if (isRegistering) {
                     // Đăng ký thành công
+
                     navigate('/home');
                 } else if (response.status === 401) {
                     // Đăng nhập không thành công, hiển thị thông báo lỗi
                     response.json().then(data => {
                         setError(data.message);
+
                     });
                 } else {
+                    response.json().then(data => {
+                        console.log(data.username)
+                    });
                     navigate('/home');
-                    return response.json();
                 }
             })
             .catch((error) => {
@@ -54,14 +59,11 @@ export default function Login() {
 
     return (
         <div>
-            {/* template string or <div className={'container' + (isRegistering ? ' active' : '')} id="container">*/}
             <div className={`container ${isRegistering ? 'active' : ''}`} id="container">
-
                 <div className="form-container sign-up">
                     <form id="signup-form" onSubmit={handleSubmit}>
                         <h1>{isRegistering ? 'Create Account' : 'Sign In'}</h1>
                         <div className="social-icons">
-
                             <a href="#" className="icon"><i className="fa-brands fa-google-plus-g"></i></a>
                             <a href="#" className="icon"><i className="fa-brands fa-facebook-f"></i></a>
                             <a href="#" className="icon"><i className="fa-brands fa-github"></i></a>
@@ -76,9 +78,7 @@ export default function Login() {
                         <button type="submit">{isRegistering ? 'Sign Up' : 'Sign In'}</button>
                     </form>
                 </div>
-
                 <div className="form-container sign-in">
-
                     <form id="login-form" onSubmit={handleSubmit}>
                         <h1>Sign In</h1>
                         <div className="social-icons">
@@ -95,7 +95,6 @@ export default function Login() {
                     </form>
                     {error && <p>{error}</p>}
                 </div>
-
                 <div className="toggle-container">
                     <div className="toggle">
                         <div className={`toggle-panel toggle-left ${isRegistering ? 'hidden1' : ''}`}>
