@@ -1,29 +1,30 @@
 const sql = require('mssql');
 const port = 4000;
-const https = require('https'); // Sử dụng https thay vì http
+const https = require('https');
 const fs = require('fs');
-const express = require('express');
-const bodyParser = require('body-parser');
+
 const bcrypt = require('bcrypt');
 const cors = require('cors');
 
-// Cấu hình SSL (HTTPS)
-const privateKey = fs.readFileSync('./.cert/key.pem'); // Đặt đường dẫn tới private key
-const certificate = fs.readFileSync('./.cert/cert.pem'); // Đặt đường dẫn tới certificate
-const credentials = { key: privateKey, cert: certificate };
+const express = require('express');
+const session = require('express-session');
+const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser')
 
+const cookie = require('cookie');
 const app = express();
-app.use(bodyParser.json());
 
-// Sử dụng middleware CORS và cấu hình tùy chọn
-const corsOptions = {
-    origin: 'https://localhost:3000',
-    methods: 'GET,POST,PUT,DELETE',
-    optionsSuccessStatus: 204
-};
-app.use(cors(corsOptions));
+// config SSL (HTTPS)
+const privateKey = fs.readFileSync('./.cert/key.pem'); // set path private key
+const certificate = fs.readFileSync('./.cert/cert.pem'); // set path certificate
+const credentials = { key: privateKey, cert: certificate };
+const server = https.createServer(credentials, app);
+//
+server.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+});
 
-// Kết nối đến SQL Server
+// connect to SQL Server
 const config = {
     user: 'sa',
     password: '11011010@aD',
@@ -42,35 +43,63 @@ sql.connect(config)
         console.error('Error connecting to SQL Server:', err);
     });
 
-// Sử dụng HTTPS thay vì HTTP
-const server = https.createServer(credentials, app);
 
-// Chuyển từ app.listen() sang server.listen() để sử dụng HTTPS
-server.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-});
+// use middleware CORS và cấu hình tùy chọn
+const corsOptions = {
+    origin: 'https://localhost:3000',
+    methods: 'GET,POST,PUT,DELETE',
+    optionsSuccessStatus: 204,
+    credentials: true
+};
+app.use(cors(corsOptions));
+
+app.use(express.json())
+app.use(cookieParser());
+app.use(bodyParser.json());
+
+app.use(session({
+    secret: 'your-secret-key', // Key bí mật để mã hóa cookie
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: true, // Nên là true nếu bạn sử dụng HTTPS
+        maxAge: 3600000, 
+    }
+}));
+
+
 
 app.post('/register', (req, res) => {
     const { name, email, password } = req.body;
 
-    // Sử dụng hàm hashPassword để mã hóa mật khẩu
+
     hashPassword(password, (hashedPassword) => {
         const insertQuery = `INSERT INTO Users (Name, Email, Password) VALUES ('${name}', '${email}', '${hashedPassword}')`;
 
         sql.query(insertQuery, (err, result) => {
             if (err) {
                 console.error('Error while executing SQL query:', err);
-                res.status(500).json({ message: 'Error inserting data into database' });
+                res.status(500).json({ message: 'Error inserting data into the database' });
             } else {
-                console.log('The data has been inserted successfully.');
-                res.json({ message: 'The data has been inserted successfully' });
+                console.log('Registration successful');
+
+                // Tạo một đối tượng cookie
+                // const emailCookie = cookie.serialize('nauser-session', email, {
+                //     secure: true, // Bảo đảm rằng cookie chỉ được gửi qua kết nối an toàn HTTPS
+                //     httpOnly: false,
+                //     maxAge: 3600000, // Thời gian sống của cookie (60 phút)
+                // });
+                // Gửi cookie về máy khách
+                // res.setHeader('Set-Cookie', "sessionDemo=emailCookie");
+                res.json({ message: 'Registration successful' });
             }
+
         });
     });
 });
-app.use('/',(req,res,next)=>{
-    res.send('hello')
-})
+
+
+// Xác thực người dùng và tạo cookie
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
     const selectQuery = `SELECT * FROM Users WHERE Email = '${email}'`;
@@ -90,8 +119,21 @@ app.post('/login', (req, res) => {
                         res.status(500).json({ message: 'Error when comparing passwords' });
                     } else {
                         if (isMatch) {
+
+
+                            // const user = { name: result.recordset[0].Name, email };
+                            // res.cookie('user', JSON.stringify(user), {
+                            //     maxAge: 360000,
+                            //     httpOnly: false,
+                            //     path: '/',
+                            // });
+
+
+                            req.session.username = result.recordset[0].Name;
+                            res.cookie('sessionId1', req.session.id);
+                            console.log(req.session.username);
                             console.log('Login successful');
-                            res.json({ message: 'Login successful' });
+                            return res.json({ message: 'Login successful', username: req.session.username });
                         } else {
                             console.log('Invalid email or password.');
                             res.status(401).json({ message: 'Invalid email or password' });
@@ -104,22 +146,13 @@ app.post('/login', (req, res) => {
 });
 
 app.get('/user-info', (req, res) => {
-    // const selectQuery = `SELECT * FROM Users`;
 
-    // sql.query(selectQuery, (err, result) => {
-    //     if (err) {
-    //         console.error('Error while executing SQL query:', err);
-    //         res.status(500).json({ message: 'Error when querying the database' });
-    //     } else {
-    //         if (result.recordset.length === 0) {
-    //             console.log('No user found.');
-    //             res.status(404).json({ message: 'No user found' });
-    //         }
+    if (req.session.username) {
+        return res.json({ valid: true, username: req.session.username });
+    }
 
-    //         return res.status(200).json({ users: result.recordsets });
-    //     }
-    // });
-});
+})
+
 
 function hashPassword(password, callback) {
     const saltRounds = 10;
@@ -131,4 +164,29 @@ function hashPassword(password, callback) {
         }
     });
 }
+app.get('/print-cookies', (req, res) => {
+    
+    const cookies = req.cookies;
+    console.log('Cookies sent to the client:', cookies);
+    res.send('Check your server console for the list of cookies sent to the client.');
+});
+// app.get('/cookie', (req, res) => {
+//     // const user = { name: 'John', email: 'john@example.com' };
+//     // const userCookie = cookie.serialize('user', JSON.stringify(user), {
+//     //     secure: true,
+//     //     httpOnly: false,
+//     // });
+//     // res.setHeader('Set-Cookie', userCookie);
+//     const user = { name: 'John', email: 'john@example.com' };
+//     res.cookie('user', JSON.stringify(user), {
+//         maxAge: 360000,
+//         httpOnly: false,
+//         path: '/',
+//     });
+// })
+app.get('/cookie', (req, res) => {
+    res.cookie('set-cookie', "sesssion=123");
+    res.send('set cookie');
+})
+
 
