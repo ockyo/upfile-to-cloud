@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Home from './home';
-
 export default function Login() {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
@@ -21,40 +20,63 @@ export default function Login() {
         setFormData({ ...formData, [name]: value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         // Thay đổi URL để sử dụng HTTPS
         const url = isRegistering ? 'https://localhost:4000/register' : 'https://localhost:4000/login';
 
-        fetch(url, {
+        const res = await fetch(url, {
             method: 'POST',
             body: JSON.stringify(formData),
             headers: {
                 'Content-Type': 'application/json',
-            }
+            },
+            credentials: 'include',
         })
-            .then((response) => {
+            // fetch("https://localhost:4000/user-info", {
+            //     method: 'GET',
+            //     credentials: 'include',
+            // })
+            .then((res) => {
                 if (isRegistering) {
-                    // Đăng ký thành công
-
-                    navigate('/home');
-                } else if (response.status === 401) {
-                    // Đăng nhập không thành công, hiển thị thông báo lỗi
-                    response.json().then(data => {
-                        setError(data.message);
-
-                    });
-                } else {
-                    response.json().then(data => {
-                        console.log(data.username)
-                    });
-                    navigate('/home');
+                    navigate('/')
                 }
-            })
-            .catch((error) => {
-                console.error('Error:', error);
+                else {
+                    if (res.status === 401) {
+                        res.json().then(data => {
+                            setError(data.message);
+                        });
+                    }
+                    else {
+                        navigate('/home');
+                    }
+                }
             });
+
+        // .then((response) => {
+        //     if (isRegistering) {
+        //         navigate('/home');
+        //     } else if (response.status === 401) {
+        //         // Đăng nhập không thành công, hiển thị thông báo lỗi
+        //         response.json().then(data => {
+        //             setError(data.message);
+
+        //         });
+        //     } else {
+        //         response.json().then(data => {
+
+        //             console.log(data)
+        //             const setCookieHeader = response.headers.get('set-cookie');
+        //             console.log(setCookieHeader);
+
+        //         });
+        //         navigate('/home');
+        //     }
+        // })
+        // .catch((error) => {
+        //     console.error('Error:', error);
+        // });
     };
 
     return (
@@ -90,10 +112,11 @@ export default function Login() {
                         <span>or use your email and password</span>
                         <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} />
                         <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} />
+                        {error && <p style={{ color: 'red', fontWeight: 'bold' }}>{error}</p>}
                         <a href="#">Forget Your Password?</a>
                         <button type="submit">Sign In</button>
                     </form>
-                    {error && <p>{error}</p>}
+
                 </div>
                 <div className="toggle-container">
                     <div className="toggle">
