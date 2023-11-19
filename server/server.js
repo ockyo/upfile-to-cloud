@@ -233,9 +233,31 @@ app.post('/upload', upload.single('file'), (req, res) => {
     res.json({ message: 'Upload file successed.' });
 })
 
+app.get('/download/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = `public/Images/${filename}`;
+
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) {
+      res.status(404).json({ error: 'File not found' });
+    } else {
+      res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+      fs.createReadStream(filePath).pipe(res);
+    }
+  });
+});
+
+app.get('/files', (req, res) => {
+    fs.readdir('public/Images/', (err, files) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+      } else {
+        res.json(files);
+      }
+    });
+  });
+
 //////////////
-
-
 
 // console.log(req.session);
 // if (req.session && req.session.username) {
